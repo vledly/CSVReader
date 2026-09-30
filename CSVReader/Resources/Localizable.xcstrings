@@ -1,6 +1,18 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "issues.empty.title" : {
+      "comment" : "Empty state title shown when the CSV contains no issues.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No issues found"
+          }
+        }
+      }
+    },
     "issues.empty.noSelection.title" : {
       "comment" : "Empty state title shown before a CSV file is selected.",
       "extractionState" : "manual",
@@ -9,6 +21,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "No CSV selected"
+          }
+        }
+      }
+    },
+    "issues.error.title" : {
+      "comment" : "Error state title shown when the bundled CSV cannot be loaded.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unable to load CSV"
+          }
+        }
+      }
+    },
+    "issues.row.issueCount" : {
+      "comment" : "Number of issues displayed in an issue row.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Issues: %lld"
           }
         }
       }

@@ -10,13 +10,15 @@ struct IssuesView<ViewModel: Store<IssuesViewState, IssuesInput>>: View {
     var body: some View {
         Group {
             switch viewModel.state.status {
-            case .initial:
+            case .initial, .loading:
                 ProgressView()
-            case .ready:
+            case .content(let content):
+                Content(content: content)
+            case .failure:
                 ContentUnavailableView {
                     Label(
-                        .issuesEmptyNoSelectionTitle,
-                        systemImage: AppIcons.table
+                        .issuesErrorTitle,
+                        systemImage: AppIcons.error
                     )
                 }
             }
@@ -28,8 +30,50 @@ struct IssuesView<ViewModel: Store<IssuesViewState, IssuesInput>>: View {
     }
 }
 
+private extension IssuesView {
+    struct Content: View {
+        let content: IssuesViewState.Content
+
+        var body: some View {
+            if content.items.isEmpty {
+                ContentUnavailableView {
+                    Label(
+                        .issuesEmptyTitle,
+                        systemImage: AppIcons.table
+                    )
+                }
+            } else {
+                List(content.items) { item in
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(item.name)
+                            .font(.headline)
+
+                        HStack {
+                            Text(item.issueCount)
+                            Spacer()
+                            Text(item.dateOfBirth)
+                        }
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    }
+                }
+            }
+        }
+    }
+}
+
 #Preview {
     NavigationStack {
-        IssuesAssembly.makeView()
+        IssuesAssembly.makeView(
+            dependencies: IssuesDependencies(
+                issuesService: IssuesService(
+                    parser: TabularDataCSVParser()
+                ),
+                initialFileURL: Bundle.main.url(
+                    forResource: "issues",
+                    withExtension: "csv"
+                )
+            )
+        )
     }
 }
