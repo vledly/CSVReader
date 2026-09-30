@@ -1,0 +1,30 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "issues.empty.noSelection.title" : {
+      "comment" : "Empty state title shown before a CSV file is selected.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No CSV selected"
+          }
+        }
+      }
+    },
+    "issues.title" : {
+      "comment" : "Navigation title of the CSV issues screen.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CSV Reader"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

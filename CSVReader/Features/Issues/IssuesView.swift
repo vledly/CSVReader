@@ -13,13 +13,15 @@ struct IssuesView<ViewModel: Store<IssuesViewState, IssuesInput>>: View {
             case .initial:
                 ProgressView()
             case .ready:
-                ContentUnavailableView(
-                    "No CSV selected",
-                    systemImage: "tablecells"
-                )
+                ContentUnavailableView {
+                    Label(
+                        .issuesEmptyNoSelectionTitle,
+                        systemImage: AppIcons.table
+                    )
+                }
             }
         }
-        .navigationTitle("CSV Reader")
+        .navigationTitle(.issuesTitle)
         .task {
             await viewModel.trigger(.viewDidAppear)
         }
