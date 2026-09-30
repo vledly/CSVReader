@@ -2,7 +2,14 @@ import Foundation
 import TabularData
 
 actor TabularDataCSVParser: CSVParsing {
-    func parse(fileURL: URL) async throws -> CSVDocumentDTO {
+    func parse(
+        fileURL: URL,
+        offset: Int,
+        limit: Int
+    ) async throws -> CSVPageDTO {
+        precondition(offset >= 0)
+        precondition(limit > 0)
+
         let hasAccess = fileURL.startAccessingSecurityScopedResource()
         defer {
             if hasAccess {
@@ -10,12 +17,7 @@ actor TabularDataCSVParser: CSVParsing {
             }
         }
 
-        let data = try Data(contentsOf: fileURL)
         try Task.checkCancellation()
-
-        guard !data.isEmpty else {
-            return CSVDocumentDTO(headers: [], rows: [])
-        }
 
         let options = CSVReadingOptions(
             hasHeaderRow: true,
@@ -24,10 +26,16 @@ actor TabularDataCSVParser: CSVParsing {
             usesEscaping: false,
             delimiter: ","
         )
-        let frame = try DataFrame(csvData: data, options: options)
+        let requestedRows = offset..<(offset + limit + 1)
+        let frame = try DataFrame(
+            contentsOfCSVFile: fileURL,
+            rows: requestedRows,
+            options: options
+        )
         let headers = frame.columns.map(\.name)
+        let hasMore = frame.rows.count > limit
 
-        let rows = try frame.rows.map { row in
+        let rows = try frame.rows.prefix(limit).map { row in
             try Task.checkCancellation()
             return headers.map { header in
                 guard let value = row[header] else { return "" }
@@ -35,6 +43,11 @@ actor TabularDataCSVParser: CSVParsing {
             }
         }
 
-        return CSVDocumentDTO(headers: headers, rows: rows)
+        return CSVPageDTO(
+            headers: headers,
+            rows: rows,
+            offset: offset,
+            hasMore: hasMore
+        )
     }
 }

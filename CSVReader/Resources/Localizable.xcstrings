@@ -49,6 +49,18 @@
         }
       }
     },
+    "issues.pagination.retry" : {
+      "comment" : "Button title for retrying a failed next CSV page request.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Retry"
+          }
+        }
+      }
+    },
     "issues.title" : {
       "comment" : "Navigation title of the CSV issues screen.",
       "extractionState" : "manual",

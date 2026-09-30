@@ -15,15 +15,15 @@ struct IssuesServiceMapper: Sendable {
         static let dateOfBirth = "Date of birth"
     }
 
-    func map(_ document: CSVDocumentDTO) throws -> [Issue] {
-        let firstNameIndex = try columnIndex(Column.firstName, in: document.headers)
-        let surnameIndex = try columnIndex(Column.surname, in: document.headers)
-        let issueCountIndex = try columnIndex(Column.issueCount, in: document.headers)
-        let dateOfBirthIndex = try columnIndex(Column.dateOfBirth, in: document.headers)
+    func map(_ page: CSVPageDTO) throws -> IssuesPage {
+        let firstNameIndex = try columnIndex(Column.firstName, in: page.headers)
+        let surnameIndex = try columnIndex(Column.surname, in: page.headers)
+        let issueCountIndex = try columnIndex(Column.issueCount, in: page.headers)
+        let dateOfBirthIndex = try columnIndex(Column.dateOfBirth, in: page.headers)
         let dateFormatter = AppDateFormatters.csvDate()
 
-        return try document.rows.enumerated().map { index, row in
-            let csvRow = index + 2
+        let items = try page.rows.enumerated().map { index, row in
+            let csvRow = page.offset + index + 2
             let firstName = try value(
                 at: firstNameIndex,
                 column: Column.firstName,
@@ -69,6 +69,11 @@ struct IssuesServiceMapper: Sendable {
                 dateOfBirth: dateOfBirth
             )
         }
+
+        return IssuesPage(
+            items: items,
+            hasMore: page.hasMore
+        )
     }
 }
 

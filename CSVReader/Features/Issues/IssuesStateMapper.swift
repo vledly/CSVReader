@@ -1,10 +1,13 @@
 import Foundation
 
 struct IssuesStateMapper {
-    func map(_ issues: [Issue]) -> IssuesViewState.Content {
-        let items = issues.enumerated().map { index, issue in
+    func map(
+        _ issues: [Issue],
+        offset: Int
+    ) -> [IssuesViewState.Item] {
+        issues.enumerated().map { index, issue in
             IssuesViewState.Item(
-                id: index,
+                id: offset + index,
                 name: "\(issue.firstName) \(issue.surname)",
                 issueCount: String(
                     localized: .issuesRowIssueCount(issue.issueCount)
@@ -15,7 +18,5 @@ struct IssuesStateMapper {
                 )
             )
         }
-
-        return IssuesViewState.Content(items: items)
     }
 }

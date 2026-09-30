@@ -13,7 +13,15 @@ struct IssuesView<ViewModel: Store<IssuesViewState, IssuesInput>>: View {
             case .initial, .loading:
                 ProgressView()
             case .content(let content):
-                Content(content: content)
+                Content(
+                    content: content,
+                    loadNextPageAction: {
+                        send(.loadNextPage)
+                    },
+                    retryNextPageAction: {
+                        send(.retryNextPage)
+                    }
+                )
             case .failure:
                 ContentUnavailableView {
                     Label(
@@ -25,14 +33,20 @@ struct IssuesView<ViewModel: Store<IssuesViewState, IssuesInput>>: View {
         }
         .navigationTitle(.issuesTitle)
         .task {
-            await viewModel.trigger(.viewDidAppear)
+            send(.viewDidAppear)
         }
     }
 }
 
 private extension IssuesView {
+    func send(_ input: IssuesInput) {
+        Task { await viewModel.trigger(input) }
+    }
+
     struct Content: View {
         let content: IssuesViewState.Content
+        let loadNextPageAction: () -> Void
+        let retryNextPageAction: () -> Void
 
         var body: some View {
             if content.items.isEmpty {
@@ -43,19 +57,33 @@ private extension IssuesView {
                     )
                 }
             } else {
-                List(content.items) { item in
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(item.name)
-                            .font(.headline)
+                List {
+                    ForEach(content.items) { item in
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(item.name)
+                                .font(.headline)
 
-                        HStack {
-                            Text(item.issueCount)
-                            Spacer()
-                            Text(item.dateOfBirth)
+                            HStack {
+                                Text(item.issueCount)
+                                Spacer()
+                                Text(item.dateOfBirth)
+                            }
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
                         }
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .onAppear {
+                            guard item.id == content.items.last?.id else {
+                                return
+                            }
+                            loadNextPageAction()
+                        }
                     }
+
+                    PaginationFooter(
+                        status: content.paginationStatus,
+                        retryTitle: .issuesPaginationRetry,
+                        onRetry: retryNextPageAction
+                    )
                 }
             }
         }

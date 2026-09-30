@@ -17,7 +17,7 @@ final class AppContainer {
         issuesDependencies = IssuesDependencies(
             issuesService: issuesService,
             initialFileURL: bundle.url(
-                forResource: "issues",
+                forResource: "issues-large",
                 withExtension: "csv"
             )
         )
