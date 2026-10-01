@@ -37,6 +37,18 @@
         }
       }
     },
+    "issues.filePicker.button.title" : {
+      "comment" : "Accessibility title for the button that opens the CSV file picker.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose CSV"
+          }
+        }
+      }
+    },
     "issues.row.issueCount" : {
       "comment" : "Number of issues displayed in an issue row.",
       "extractionState" : "manual",

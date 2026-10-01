@@ -1,8 +1,15 @@
+import Foundation
 import Observation
 
 @MainActor
 @Observable
 final class IssuesViewModel: Store {
+    private struct Context {
+        var fileURL: URL?
+        var nextOffset = 0
+        var activeLoadID: UUID?
+    }
+
     private enum PageLoad {
         case first
         case next(expectedStatus: PaginationStatus)
@@ -11,8 +18,7 @@ final class IssuesViewModel: Store {
     private(set) var state = IssuesViewState()
     private let dependencies: IssuesDependencies
     private let mapper: IssuesStateMapper
-    @ObservationIgnored private var nextOffset = 0
-    @ObservationIgnored private var isLoadingPage = false
+    @ObservationIgnored private var context: Context
 
     init(
         dependencies: IssuesDependencies,
@@ -20,12 +26,17 @@ final class IssuesViewModel: Store {
     ) {
         self.dependencies = dependencies
         self.mapper = mapper
+        context = Context(fileURL: dependencies.initialFileURL)
     }
 
     func trigger(_ input: IssuesInput) async {
         switch input {
         case .viewDidAppear:
             guard case .initial = state.status else { return }
+            await loadPage(.first)
+        case .fileSelected(let fileURL):
+            context.fileURL = fileURL
+            context.activeLoadID = nil
             await loadPage(.first)
         case .loadNextPage:
             await loadPage(.next(expectedStatus: .ready))
@@ -37,18 +48,15 @@ final class IssuesViewModel: Store {
 
 private extension IssuesViewModel {
     private func loadPage(_ load: PageLoad) async {
-        guard !isLoadingPage else {
-            return
-        }
-
         let currentItems: [IssuesViewState.Item]
         switch load {
         case .first:
             currentItems = []
-            nextOffset = 0
+            context.nextOffset = 0
             state.status = .loading
         case .next(let expectedStatus):
             guard
+                context.activeLoadID == nil,
                 case .content(let content) = state.status,
                 content.paginationStatus == expectedStatus
             else {
@@ -61,23 +69,31 @@ private extension IssuesViewModel {
             ))
         }
 
-        guard let fileURL = dependencies.initialFileURL else {
+        guard let fileURL = context.fileURL else {
             state.status = .failure
             return
         }
 
-        isLoadingPage = true
-        defer { isLoadingPage = false }
+        let loadID = UUID()
+        context.activeLoadID = loadID
+        defer {
+            if context.activeLoadID == loadID {
+                context.activeLoadID = nil
+            }
+        }
 
         do {
             let page = try await dependencies.issuesService.fetchPage(
                 from: fileURL,
-                offset: nextOffset
+                offset: context.nextOffset
             )
+            guard context.activeLoadID == loadID else {
+                return
+            }
             try Task.checkCancellation()
             let newItems = mapper.map(
                 page.items,
-                offset: nextOffset
+                offset: context.nextOffset
             )
             let items: [IssuesViewState.Item]
             switch load {
@@ -92,10 +108,13 @@ private extension IssuesViewModel {
                     paginationStatus: page.hasMore ? .ready : .end
                 )
             )
-            nextOffset += page.items.count
+            context.nextOffset += page.items.count
         } catch is CancellationError {
             return
         } catch {
+            guard context.activeLoadID == loadID else {
+                return
+            }
             switch load {
             case .first:
                 state.status = .failure

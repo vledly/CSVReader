@@ -1,7 +1,9 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct IssuesView<ViewModel: Store<IssuesViewState, IssuesInput>>: View {
     @State private var viewModel: ViewModel
+    @State private var isFileImporterPresented = false
 
     init(viewModel: ViewModel) {
         _viewModel = State(initialValue: viewModel)
@@ -32,6 +34,27 @@ struct IssuesView<ViewModel: Store<IssuesViewState, IssuesInput>>: View {
             }
         }
         .navigationTitle(.issuesTitle)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    isFileImporterPresented = true
+                } label: {
+                    Label(
+                        .issuesFilePickerButtonTitle,
+                        systemImage: AppIcons.chooseFile
+                    )
+                }
+            }
+        }
+        .fileImporter(
+            isPresented: $isFileImporterPresented,
+            allowedContentTypes: [.commaSeparatedText]
+        ) { result in
+            guard case .success(let fileURL) = result else {
+                return
+            }
+            send(.fileSelected(fileURL))
+        }
         .task {
             send(.viewDidAppear)
         }
