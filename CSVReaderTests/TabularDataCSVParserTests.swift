@@ -32,6 +32,38 @@ struct TabularDataCSVParserTests {
         }
     }
 
+    @Test(
+        "Detects a supported delimiter",
+        arguments: [Character(","), Character(";"), Character("\t")]
+    )
+    func detectsSupportedDelimiter(_ delimiter: Character) async throws {
+        let firstHeader: String
+        switch delimiter {
+        case ",":
+            firstHeader = "Display; name"
+        case ";":
+            firstHeader = "Display, name"
+        default:
+            firstHeader = "Display, name; label"
+        }
+
+        try await withCSV(
+            """
+            "\(firstHeader)"\(delimiter)"Value"
+            "Smith, Jr."\(delimiter)"10"
+            """
+        ) { fileURL in
+            let page = try await TabularDataCSVParser().parse(
+                fileURL: fileURL,
+                offset: 0,
+                limit: 100
+            )
+
+            #expect(page.headers == [firstHeader, "Value"])
+            #expect(page.rows == [["Smith, Jr.", "10"]])
+        }
+    }
+
     @Test("Respects limit and detects the next page")
     func respectsLimitAndDetectsNextPage() async throws {
         try await withCSV(

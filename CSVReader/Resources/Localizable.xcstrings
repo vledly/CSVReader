@@ -109,6 +109,42 @@
         }
       }
     },
+    "issues.presentation.issues" : {
+      "comment" : "Title of the typed issues presentation mode.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Issues"
+          }
+        }
+      }
+    },
+    "issues.presentation.table" : {
+      "comment" : "Title of the presentation mode that displays every CSV column.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Table"
+          }
+        }
+      }
+    },
+    "issues.presentation.title" : {
+      "comment" : "Accessibility label for the CSV presentation mode picker.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Presentation"
+          }
+        }
+      }
+    },
     "issues.title" : {
       "comment" : "Navigation title of the CSV issues screen.",
       "extractionState" : "manual",
@@ -117,6 +153,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "CSV Reader"
+          }
+        }
+      }
+    },
+    "issues.table.empty.title" : {
+      "comment" : "Empty state title shown when a CSV table contains no rows.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No rows found"
           }
         }
       }

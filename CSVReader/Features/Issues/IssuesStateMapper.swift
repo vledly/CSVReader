@@ -20,4 +20,24 @@ struct IssuesStateMapper {
             )
         }
     }
+
+    func map(_ page: CSVPageDTO) -> IssuesViewState.Table {
+        let rows = page.rows.enumerated().map { index, values in
+            IssuesViewState.TableRow(
+                id: page.offset + index,
+                values: page.headers.indices.map { columnIndex in
+                    guard values.indices.contains(columnIndex) else {
+                        return ""
+                    }
+
+                    return values[columnIndex]
+                }
+            )
+        }
+
+        return IssuesViewState.Table(
+            headers: page.headers,
+            rows: rows
+        )
+    }
 }

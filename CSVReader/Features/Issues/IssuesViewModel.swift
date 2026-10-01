@@ -15,6 +15,12 @@ final class IssuesViewModel: Store {
         case next(expectedStatus: PaginationStatus)
     }
 
+    private struct LoadedPage {
+        let presentation: IssuesViewState.Presentation
+        let itemCount: Int
+        let hasMore: Bool
+    }
+
     private(set) var state = IssuesViewState()
     private let dependencies: IssuesDependencies
     private let mapper: IssuesStateMapper
@@ -41,6 +47,10 @@ final class IssuesViewModel: Store {
         case .fileSelected(let fileURL):
             context.fileURL = fileURL
             startLoading(.first)
+        case .presentationModeSelected(let mode):
+            guard state.presentationMode != mode else { return }
+            state.presentationMode = mode
+            startLoading(.first)
         case .loadNextPage:
             startLoading(.next(expectedStatus: .ready))
         case .retryNextPage:
@@ -51,11 +61,11 @@ final class IssuesViewModel: Store {
 
 private extension IssuesViewModel {
     private func startLoading(_ load: PageLoad) {
-        let currentItems: [IssuesViewState.Item]
+        let currentPresentation: IssuesViewState.Presentation?
         switch load {
         case .first:
             cancelLoading()
-            currentItems = []
+            currentPresentation = nil
             context.nextOffset = 0
             state.status = .loading
         case .next(let expectedStatus):
@@ -66,9 +76,9 @@ private extension IssuesViewModel {
             else {
                 return
             }
-            currentItems = content.items
+            currentPresentation = content.presentation
             state.status = .content(IssuesViewState.Content(
-                items: currentItems,
+                presentation: content.presentation,
                 paginationStatus: .loading
             ))
         }
@@ -79,25 +89,43 @@ private extension IssuesViewModel {
         }
 
         let offset = context.nextOffset
+        let mode = state.presentationMode
+        let csvService = dependencies.csvService
         let issuesService = dependencies.issuesService
         let mapper = mapper
 
         context.loadTask = Task { [weak self] in
             do {
-                let page = try await issuesService.fetchPage(
-                    from: fileURL,
-                    offset: offset
-                )
+                let loadedPage: LoadedPage
+                switch mode {
+                case .issues:
+                    let page = try await issuesService.fetchPage(
+                        from: fileURL,
+                        offset: offset
+                    )
+                    loadedPage = LoadedPage(
+                        presentation: .issues(mapper.map(
+                            page.items,
+                            offset: offset
+                        )),
+                        itemCount: page.items.count,
+                        hasMore: page.hasMore
+                    )
+                case .table:
+                    let page = try await csvService.fetchPage(
+                        from: fileURL,
+                        offset: offset
+                    )
+                    loadedPage = LoadedPage(
+                        presentation: .table(mapper.map(page)),
+                        itemCount: page.rows.count,
+                        hasMore: page.hasMore
+                    )
+                }
                 try Task.checkCancellation()
-                let newItems = mapper.map(
-                    page.items,
-                    offset: offset
-                )
                 self?.finishLoading(
-                    page: page,
-                    newItems: newItems,
-                    currentItems: currentItems,
-                    load: load,
+                    loadedPage: loadedPage,
+                    currentPresentation: currentPresentation,
                     offset: offset
                 )
             } catch is CancellationError {
@@ -105,7 +133,7 @@ private extension IssuesViewModel {
             } catch {
                 guard !Task.isCancelled else { return }
                 self?.failLoading(
-                    currentItems: currentItems,
+                    currentPresentation: currentPresentation,
                     load: load
                 )
             }
@@ -113,32 +141,27 @@ private extension IssuesViewModel {
     }
 
     private func finishLoading(
-        page: IssuesPage,
-        newItems: [IssuesViewState.Item],
-        currentItems: [IssuesViewState.Item],
-        load: PageLoad,
+        loadedPage: LoadedPage,
+        currentPresentation: IssuesViewState.Presentation?,
         offset: Int
     ) {
-        let items: [IssuesViewState.Item]
-        switch load {
-        case .first:
-            items = newItems
-        case .next:
-            items = currentItems + newItems
-        }
+        let presentation = append(
+            loadedPage.presentation,
+            to: currentPresentation
+        )
 
         context.loadTask = nil
-        context.nextOffset = offset + page.items.count
+        context.nextOffset = offset + loadedPage.itemCount
         state.status = .content(
             IssuesViewState.Content(
-                items: items,
-                paginationStatus: page.hasMore ? .ready : .end
+                presentation: presentation,
+                paginationStatus: loadedPage.hasMore ? .ready : .end
             )
         )
     }
 
     private func failLoading(
-        currentItems: [IssuesViewState.Item],
+        currentPresentation: IssuesViewState.Presentation?,
         load: PageLoad
     ) {
         context.loadTask = nil
@@ -146,10 +169,35 @@ private extension IssuesViewModel {
         case .first:
             state.status = .failure
         case .next:
+            guard let currentPresentation else {
+                state.status = .failure
+                return
+            }
             state.status = .content(IssuesViewState.Content(
-                items: currentItems,
+                presentation: currentPresentation,
                 paginationStatus: .failed
             ))
+        }
+    }
+
+    private func append(
+        _ newPresentation: IssuesViewState.Presentation,
+        to currentPresentation: IssuesViewState.Presentation?
+    ) -> IssuesViewState.Presentation {
+        guard let currentPresentation else {
+            return newPresentation
+        }
+
+        switch (currentPresentation, newPresentation) {
+        case (.issues(let currentItems), .issues(let newItems)):
+            return .issues(currentItems + newItems)
+        case (.table(let currentTable), .table(let newTable)):
+            return .table(IssuesViewState.Table(
+                headers: currentTable.headers,
+                rows: currentTable.rows + newTable.rows
+            ))
+        default:
+            return newPresentation
         }
     }
 
