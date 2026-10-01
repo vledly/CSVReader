@@ -12,6 +12,7 @@ struct IssuesStateMapper {
                 issueCount: String(
                     localized: .issuesRowIssueCount(issue.issueCount)
                 ),
+                issueCountValue: String(issue.issueCount),
                 dateOfBirth: issue.dateOfBirth.formatted(
                     date: .abbreviated,
                     time: .omitted

@@ -67,9 +67,16 @@ private extension IssuesView {
     }
 
     struct Content: View {
+        @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+        @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
         let content: IssuesViewState.Content
         let loadNextPageAction: () -> Void
         let retryNextPageAction: () -> Void
+
+        private var usesTableLayout: Bool {
+            horizontalSizeClass == .regular && !dynamicTypeSize.isAccessibilitySize
+        }
 
         var body: some View {
             if content.items.isEmpty {
@@ -81,19 +88,12 @@ private extension IssuesView {
                 }
             } else {
                 List {
-                    ForEach(content.items) { item in
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(item.name)
-                                .font(.headline)
+                    if usesTableLayout {
+                        tableHeader
+                    }
 
-                            HStack {
-                                Text(item.issueCount)
-                                Spacer()
-                                Text(item.dateOfBirth)
-                            }
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                        }
+                    ForEach(content.items) { item in
+                        row(for: item)
                         .onAppear {
                             guard item.id == content.items.last?.id else {
                                 return
@@ -109,6 +109,53 @@ private extension IssuesView {
                     )
                 }
             }
+        }
+
+        @ViewBuilder
+        private func row(for item: IssuesViewState.Item) -> some View {
+            if usesTableLayout {
+                HStack {
+                    Text(item.name)
+                        .fontWeight(.medium)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    Text(item.issueCountValue)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                Text(item.dateOfBirth)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                }
+                .padding(.vertical, 4)
+            } else {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(item.name)
+                        .font(.headline)
+
+                    HStack {
+                        Text(item.issueCount)
+                        Spacer()
+                        Text(item.dateOfBirth)
+                    }
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                }
+            }
+        }
+
+        private var tableHeader: some View {
+            HStack {
+                Text(.issuesColumnName)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                Text(.issuesColumnIssueCount)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+            Text(.issuesColumnDateOfBirth)
+                .frame(maxWidth: .infinity, alignment: .trailing)
+            }
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(.secondary)
+            .textCase(.uppercase)
         }
     }
 }

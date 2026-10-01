@@ -15,6 +15,7 @@ struct IssuesViewState: Sendable {
         let id: Int
         let name: String
         let issueCount: String
+        let issueCountValue: String
         let dateOfBirth: String
     }
 

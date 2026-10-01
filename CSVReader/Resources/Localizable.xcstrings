@@ -1,6 +1,42 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "issues.column.dateOfBirth" : {
+      "comment" : "Date of birth column title shown in the regular-width issues table.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Date of birth"
+          }
+        }
+      }
+    },
+    "issues.column.issueCount" : {
+      "comment" : "Issue count column title shown in the regular-width issues table.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Issues"
+          }
+        }
+      }
+    },
+    "issues.column.name" : {
+      "comment" : "Name column title shown in the regular-width issues table.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Name"
+          }
+        }
+      }
+    },
     "issues.empty.title" : {
       "comment" : "Empty state title shown when the CSV contains no issues.",
       "extractionState" : "manual",
