@@ -33,6 +33,9 @@ final class IssuesViewModel: Store {
         self.dependencies = dependencies
         self.mapper = mapper
         context = Context(fileURL: dependencies.initialFileURL)
+        if dependencies.initialFileURL == nil {
+            state.status = .noFileSelected
+        }
     }
 
     deinit {
@@ -41,8 +44,7 @@ final class IssuesViewModel: Store {
 
     func trigger(_ input: IssuesInput) async {
         switch input {
-        case .viewDidAppear:
-            guard case .initial = state.status else { return }
+        case .viewDidFirstAppear:
             startLoading(.first)
         case .fileSelected(let fileURL):
             context.fileURL = fileURL
@@ -61,6 +63,11 @@ final class IssuesViewModel: Store {
 
 private extension IssuesViewModel {
     private func startLoading(_ load: PageLoad) {
+        guard let fileURL = context.fileURL else {
+            state.status = .noFileSelected
+            return
+        }
+
         let currentPresentation: IssuesViewState.Presentation?
         switch load {
         case .first:
@@ -81,11 +88,6 @@ private extension IssuesViewModel {
                 presentation: content.presentation,
                 paginationStatus: .loading
             ))
-        }
-
-        guard let fileURL = context.fileURL else {
-            state.status = .failure
-            return
         }
 
         let offset = context.nextOffset
@@ -180,7 +182,7 @@ private extension IssuesViewModel {
         }
     }
 
-    private func append(
+    func append(
         _ newPresentation: IssuesViewState.Presentation,
         to currentPresentation: IssuesViewState.Presentation?
     ) -> IssuesViewState.Presentation {

@@ -8,6 +8,7 @@ struct IssuesViewState: Sendable {
 
     enum Status: Sendable {
         case initial
+        case noFileSelected
         case loading
         case content(Content)
         case failure

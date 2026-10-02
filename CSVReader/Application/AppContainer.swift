@@ -2,6 +2,9 @@ import Foundation
 
 @MainActor
 final class AppContainer {
+    // true: open the bundled CSV; false: wait for a file chosen by URL.
+    private static let loadsBundledCSVOnLaunch = true
+
     let csvParser: any CSVParsing
     let csvService: CSVService
     let issuesService: IssuesService
@@ -20,10 +23,10 @@ final class AppContainer {
         issuesDependencies = IssuesDependencies(
             csvService: csvService,
             issuesService: issuesService,
-            initialFileURL: bundle.url(
-                forResource: "issues2",
+            initialFileURL: Self.loadsBundledCSVOnLaunch ? bundle.url(
+                forResource: "issues",
                 withExtension: "csv"
-            )
+            ) : nil
         )
     }
 }

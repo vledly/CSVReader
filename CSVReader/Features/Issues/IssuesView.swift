@@ -28,6 +28,17 @@ struct IssuesView<ViewModel: Store<IssuesViewState, IssuesInput>>: View {
                 case .initial, .loading:
                     ProgressView()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
+                case .noFileSelected:
+                    ContentUnavailableView {
+                        Label(
+                            .issuesEmptyNoSelectionTitle,
+                            systemImage: AppIcons.chooseFile
+                        )
+                    } actions: {
+                        Button(.issuesFilePickerButtonTitle) {
+                            isFileImporterPresented = true
+                        }
+                    }
                 case .content(let content):
                     Content(
                         content: content,
@@ -70,8 +81,8 @@ struct IssuesView<ViewModel: Store<IssuesViewState, IssuesInput>>: View {
             }
             send(.fileSelected(fileURL))
         }
-        .task {
-            send(.viewDidAppear)
+        .onFirstAppear {
+            send(.viewDidFirstAppear)
         }
     }
 }
@@ -89,202 +100,26 @@ private extension IssuesView {
     }
 
     struct Content: View {
-        @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-        @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-
         let content: IssuesViewState.Content
         let loadNextPageAction: () -> Void
         let retryNextPageAction: () -> Void
 
-        private var usesTableLayout: Bool {
-            horizontalSizeClass == .regular && !dynamicTypeSize.isAccessibilitySize
-        }
-
         var body: some View {
             switch content.presentation {
             case .issues(let items):
-                issuesList(items)
+                IssuesListView(
+                    items: items,
+                    paginationStatus: content.paginationStatus,
+                    loadNextPageAction: loadNextPageAction,
+                    retryNextPageAction: retryNextPageAction
+                )
             case .table(let table):
-                csvTable(table)
-            }
-        }
-
-        @ViewBuilder
-        private func issuesList(_ items: [IssuesViewState.Item]) -> some View {
-            if items.isEmpty {
-                ContentUnavailableView {
-                    Label(
-                        .issuesEmptyTitle,
-                        systemImage: AppIcons.table
-                    )
-                }
-            } else {
-                List {
-                    if usesTableLayout {
-                        tableHeader
-                    }
-
-                    ForEach(items) { item in
-                        row(for: item)
-                        .onAppear {
-                            guard item.id == items.last?.id else {
-                                return
-                            }
-                            loadNextPageAction()
-                        }
-                    }
-
-                    PaginationFooter(
-                        status: content.paginationStatus,
-                        retryTitle: .issuesPaginationRetry,
-                        onRetry: retryNextPageAction
-                    )
-                }
-            }
-        }
-
-        @ViewBuilder
-        private func csvTable(_ table: IssuesViewState.Table) -> some View {
-            if table.rows.isEmpty {
-                ContentUnavailableView {
-                    Label(
-                        .issuesTableEmptyTitle,
-                        systemImage: AppIcons.table
-                    )
-                }
-            } else {
-                GeometryReader { geometry in
-                    let columnCount = max(table.headers.count, 1)
-                    let columnWidth = max(
-                        geometry.size.width / CGFloat(columnCount),
-                        160
-                    )
-                    let tableWidth = columnWidth * CGFloat(columnCount)
-
-                    ScrollView([.horizontal, .vertical]) {
-                        LazyVStack(
-                            alignment: .leading,
-                            spacing: 0,
-                            pinnedViews: [.sectionHeaders]
-                        ) {
-                            Section {
-                                ForEach(table.rows) { row in
-                                    tableRow(
-                                        row,
-                                        columnCount: columnCount,
-                                        columnWidth: columnWidth
-                                    )
-                                    .onAppear {
-                                        guard row.id == table.rows.last?.id else {
-                                            return
-                                        }
-                                        loadNextPageAction()
-                                    }
-
-                                    Divider()
-                                }
-                            } header: {
-                                tableHeader(
-                                    table.headers,
-                                    columnWidth: columnWidth
-                                )
-                                .background(.background)
-                            }
-
-                            PaginationFooter(
-                                status: content.paginationStatus,
-                                retryTitle: .issuesPaginationRetry,
-                                onRetry: retryNextPageAction
-                            )
-                            .frame(width: tableWidth)
-                            .padding(.vertical, 8)
-                        }
-                        .frame(
-                            width: max(tableWidth, geometry.size.width),
-                            alignment: .leading
-                        )
-                    }
-                }
-            }
-        }
-
-        @ViewBuilder
-        private func row(for item: IssuesViewState.Item) -> some View {
-            if usesTableLayout {
-                HStack {
-                    Text(item.name)
-                        .fontWeight(.medium)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-
-                    Text(item.issueCountValue)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-
-                    Text(item.dateOfBirth)
-                        .frame(maxWidth: .infinity, alignment: .trailing)
-                }
-                .padding(.vertical, 4)
-            } else {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(item.name)
-                        .font(.headline)
-
-                    HStack {
-                        Text(item.issueCount)
-                        Spacer()
-                        Text(item.dateOfBirth)
-                    }
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                }
-            }
-        }
-
-        private var tableHeader: some View {
-            HStack {
-                Text(.issuesColumnName)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                Text(.issuesColumnIssueCount)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                Text(.issuesColumnDateOfBirth)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
-            }
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(.secondary)
-            .textCase(.uppercase)
-        }
-
-        private func tableHeader(
-            _ headers: [String],
-            columnWidth: CGFloat
-        ) -> some View {
-            HStack(spacing: 0) {
-                ForEach(Array(headers.enumerated()), id: \.offset) { _, header in
-                    Text(header)
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 10)
-                        .frame(width: columnWidth, alignment: .leading)
-                }
-            }
-        }
-
-        private func tableRow(
-            _ row: IssuesViewState.TableRow,
-            columnCount: Int,
-            columnWidth: CGFloat
-        ) -> some View {
-            HStack(spacing: 0) {
-                ForEach(0..<columnCount, id: \.self) { index in
-                    Text(row.values.indices.contains(index) ? row.values[index] : "")
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 10)
-                        .frame(width: columnWidth, alignment: .leading)
-                }
+                CSVTableView(
+                    table: table,
+                    paginationStatus: content.paginationStatus,
+                    loadNextPageAction: loadNextPageAction,
+                    retryNextPageAction: retryNextPageAction
+                )
             }
         }
     }

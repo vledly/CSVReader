@@ -5,7 +5,13 @@ struct IssuesStateMapper {
         _ issues: [Issue],
         offset: Int
     ) -> [IssuesViewState.Item] {
-        issues.enumerated().map { index, issue in
+        let birthDateStyle = Date.FormatStyle(
+            date: .abbreviated,
+            time: .omitted,
+            timeZone: .gmt
+        )
+
+        return issues.enumerated().map { index, issue in
             IssuesViewState.Item(
                 id: offset + index,
                 name: "\(issue.firstName) \(issue.surname)",
@@ -13,10 +19,7 @@ struct IssuesStateMapper {
                     localized: .issuesRowIssueCount(issue.issueCount)
                 ),
                 issueCountValue: String(issue.issueCount),
-                dateOfBirth: issue.dateOfBirth.formatted(
-                    date: .abbreviated,
-                    time: .omitted
-                )
+                dateOfBirth: issue.dateOfBirth.formatted(birthDateStyle)
             )
         }
     }

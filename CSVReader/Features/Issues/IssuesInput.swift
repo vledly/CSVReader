@@ -1,7 +1,7 @@
 import Foundation
 
 enum IssuesInput: Sendable {
-    case viewDidAppear
+    case viewDidFirstAppear
     case fileSelected(URL)
     case presentationModeSelected(IssuesViewState.PresentationMode)
     case loadNextPage
